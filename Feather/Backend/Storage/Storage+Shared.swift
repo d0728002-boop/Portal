@@ -59,6 +59,7 @@ protocol AppInfoPresentable {
 	var iconURL: URL? { get }
 	var uuid: String? { get }
 	var isSigned: Bool { get }
+	var archiveURL: URL? { get }
 	
 }
 
@@ -67,11 +68,19 @@ extension Signed: AppInfoPresentable {
 	var iconURL: URL? {
 		Storage.shared.getAppIconFile(for: self)
 	}
+	var archiveURL: URL? {
+		guard let uuid = uuid else { return nil }
+		let signedDir = FileManager.default.signed(uuid)
+		return FileManager.default.getPath(in: signedDir, for: "ipa")
+	}
 }
 
 extension Imported: AppInfoPresentable {
 	var isSigned: Bool { false }
 	var iconURL: URL? {
 		Storage.shared.getAppIconFile(for: self)
+	}
+	var archiveURL: URL? {
+		return nil
 	}
 }
