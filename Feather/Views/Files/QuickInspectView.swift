@@ -233,8 +233,7 @@ struct QuickInspectView: View {
                 
                 self.isLoading = false
             }
-            }
-        }.value
+        }
     }
 }
 
