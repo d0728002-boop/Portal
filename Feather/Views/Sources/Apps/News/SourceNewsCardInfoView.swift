@@ -14,8 +14,7 @@ struct SourceNewsCardInfoView: View {
 				VStack(alignment: .leading, spacing: 24) {
 					// Modern image header
 					ZStack(alignment: .bottomLeading) {
-						let placeholderView = {
-						ZStack {
+						let placeholderView: some View = ZStack {
 							LinearGradient(
 								colors: [
 									Color.accentColor.opacity(0.2),
@@ -35,9 +34,9 @@ struct SourceNewsCardInfoView: View {
 							LazyImage(url: iconURL) { state in
 								if let image = state.image {
 									Color.clear.overlay(
-									image
-										.resizable()
-										.aspectRatio(contentMode: .fill)
+										image
+											.resizable()
+											.aspectRatio(contentMode: .fill)
 									)
 								} else {
 									placeholderView
@@ -47,21 +46,23 @@ struct SourceNewsCardInfoView: View {
 							placeholderView
 						}
 					}
-				.frame(height: 280)
-				.frame(maxWidth: .infinity)
-				.clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-				.overlay(
-					RoundedRectangle(cornerRadius: 24, style: .continuous)
-						.stroke(
-							LinearGradient(
-								colors: [.white.opacity(0.2), .clear],
-								startPoint: .topLeading,
-								endPoint: .bottomTrailing
-							),
-							lineWidth: 1
-						)
-				)
-				.shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+					.frame(height: 280)
+					.frame(maxWidth: .infinity)
+					.clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+					.overlay(
+						RoundedRectangle(cornerRadius: 24, style: .continuous)
+							.stroke(
+								LinearGradient(
+									colors: [.white.opacity(0.2), .clear],
+									startPoint: .topLeading,
+									endPoint: .bottomTrailing
+								),
+								lineWidth: 1
+							)
+					)
+					.shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
+					
+					// Content section
 					VStack(alignment: .leading, spacing: 16) {
 						// Title
 						Text(new.title)
@@ -106,24 +107,24 @@ struct SourceNewsCardInfoView: View {
 							Button {
 								UIApplication.shared.open(url)
 							} label: {
-									HStack(spacing: 10) {
-										Text(.localized("Read More"))
-											.font(.system(size: 17, weight: .bold))
-										Image(systemName: "arrow.up.right")
-											.font(.system(size: 15, weight: .bold))
-									}
-									.foregroundStyle(.white)
-									.frame(maxWidth: .infinity)
-									.padding(.vertical, 16)
-									.background(
-										LinearGradient(
-											colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
-											startPoint: .leading,
-											endPoint: .trailing
-										)
+								HStack(spacing: 10) {
+									Text(.localized("Read More"))
+										.font(.system(size: 17, weight: .bold))
+									Image(systemName: "arrow.up.right")
+										.font(.system(size: 15, weight: .bold))
+								}
+								.foregroundStyle(.white)
+								.frame(maxWidth: .infinity)
+								.padding(.vertical, 16)
+								.background(
+									LinearGradient(
+										colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+										startPoint: .leading,
+										endPoint: .trailing
 									)
-									.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-									.shadow(color: Color.accentColor.opacity(0.4), radius: 12, x: 0, y: 6)
+								)
+								.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+								.shadow(color: Color.accentColor.opacity(0.4), radius: 12, x: 0, y: 6)
 							}
 							.buttonStyle(.plain)
 							.padding(.top, 8)
