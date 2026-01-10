@@ -252,17 +252,30 @@ struct CertificatesAddView: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
                         .fill(
-                            isSelected
-                            ? Color.green.opacity(0.15)
-                            : color.opacity(0.15)
+                            LinearGradient(
+                                colors: [
+                                    isSelected ? Color.green.opacity(0.2) : color.opacity(0.2),
+                                    isSelected ? Color.green.opacity(0.1) : color.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
-                        .frame(width: 44, height: 44)
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(
+                                    isSelected ? Color.green.opacity(0.3) : color.opacity(0.3),
+                                    lineWidth: 1.5
+                                )
+                        )
                     
                     Image(systemName: isSelected ? "checkmark.circle.fill" : icon)
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(isSelected ? .green : color)
+                        .shadow(color: isSelected ? .green.opacity(0.3) : color.opacity(0.3), radius: 2, x: 0, y: 1)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -284,18 +297,39 @@ struct CertificatesAddView: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            .padding(14)
+            .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(
-                                isSelected ? Color.green.opacity(0.3) : Color.clear,
-                                lineWidth: 1.5
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    isSelected ? Color.green.opacity(0.08) : color.opacity(0.06),
+                                    isSelected ? Color.green.opacity(0.04) : color.opacity(0.03)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
                             )
-                    )
+                        )
+                    
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(
+                            isSelected ? 
+                                LinearGradient(
+                                    colors: [Color.green.opacity(0.4), Color.green.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ) :
+                                LinearGradient(
+                                    colors: [color.opacity(0.2), color.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                            lineWidth: 2
+                        )
+                }
             )
+            .shadow(color: isSelected ? .green.opacity(0.2) : color.opacity(0.1), radius: 6, x: 0, y: 3)
         }
         .disabled(isSelected)
         .animation(.easeInOut(duration: 0.2), value: isSelected)

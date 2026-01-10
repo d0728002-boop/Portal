@@ -157,16 +157,19 @@ struct SourcesView: View {
     // MARK: - Custom Navigation Bar
     private var customNavigationBar: some View {
         HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(greetingText)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+                
+                Text("Manage your sources")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            
             Spacer()
             
-            Text(greetingText)
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-            
-            Spacer()
-        }
-        .overlay(alignment: .trailing) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 // Sparkles button
                 Button {
                     _showCertificateTooltip = true
@@ -189,8 +192,8 @@ struct SourcesView: View {
                 }
                 .disabled(_addingSourceLoading)
             }
-            .padding(.trailing, 20)
         }
+        .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 24)
     }

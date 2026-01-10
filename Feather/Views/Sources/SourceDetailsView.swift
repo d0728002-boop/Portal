@@ -42,9 +42,17 @@ struct SourceDetailsView: View {
     
     var body: some View {
         ZStack {
-            // Simple background
-            Color(.systemBackground)
-                .ignoresSafeArea()
+            // Gradient background based on source icon color
+            LinearGradient(
+                colors: [
+                    dominantColor.opacity(0.15),
+                    dominantColor.opacity(0.05),
+                    Color(.systemBackground)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
             
             ScrollView {
                 VStack(spacing: 0) {
@@ -96,12 +104,12 @@ struct SourceDetailsView: View {
             } label: {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.1))
+                        .fill(dominantColor.opacity(0.15))
                         .frame(width: 40, height: 40)
                     
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(dominantColor)
                 }
             }
             
@@ -109,7 +117,7 @@ struct SourceDetailsView: View {
             
             Text("Source Details")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
             
             Spacer()
             
@@ -195,14 +203,34 @@ struct SourceDetailsView: View {
         }
         .padding(24)
         .background(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                )
+            ZStack {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                dominantColor.opacity(0.12),
+                                dominantColor.opacity(0.06)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                dominantColor.opacity(0.3),
+                                dominantColor.opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+            }
         )
-        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .shadow(color: dominantColor.opacity(0.15), radius: 12, x: 0, y: 6)
     }
     
     // MARK: - Featured News Section (Horizontal Cards)
