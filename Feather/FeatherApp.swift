@@ -10,10 +10,14 @@ struct FeatherApp: App {
 	let heartbeat = HeartbeatManager.shared
 
 	@StateObject var downloadManager = DownloadManager.shared
+	@StateObject var networkMonitor = NetworkMonitor.shared
 	let storage = Storage.shared
 
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+    @AppStorage("dev.updateBannerDismissed") private var updateBannerDismissed = false
     @State private var hasDylibsDetected: Bool = false
+    @State private var showUpdateBanner = false
+    @State private var latestVersion: String = ""
 
 	var body: some Scene {
 		WindowGroup(content: {
@@ -25,6 +29,9 @@ struct FeatherApp: App {
 							// Prevent any navigation or state changes
 							UIApplication.shared.isIdleTimerDisabled = false
 						}
+				} else if !networkMonitor.isConnected && !UserDefaults.standard.bool(forKey: "dev.simulateOffline") {
+					// Show offline view when no connectivity (unless simulating)
+					OfflineView()
 				} else if !hasCompletedOnboarding {
 					if #available(iOS 17.0, *) {
 						OnboardingView()
@@ -39,7 +46,27 @@ struct FeatherApp: App {
 							}
 					}
 				} else {
-					VStack {
+					VStack(spacing: 0) {
+						// Update banner at the top
+						if showUpdateBanner && !updateBannerDismissed {
+							UpdateBannerView(
+								version: latestVersion,
+								message: "New version available",
+								onDismiss: {
+									updateBannerDismissed = true
+									showUpdateBanner = false
+									AppLogManager.shared.info("Update banner dismissed", category: "Updates")
+								},
+								onUpdate: {
+									if let url = URL(string: "https://github.com/aoyn1xw/Portal/releases/latest") {
+										UIApplication.shared.open(url)
+									}
+									AppLogManager.shared.info("Opening GitHub releases page", category: "Updates")
+								}
+							)
+							.transition(.move(edge: .top).combined(with: .opacity))
+						}
+						
 						DownloadHeaderView(downloadManager: downloadManager)
 							.transition(.move(edge: .top).combined(with: .opacity))
 						VariedTabbarView()
@@ -48,6 +75,7 @@ struct FeatherApp: App {
 							.transition(.move(edge: .top).combined(with: .opacity))
 					}
 					.animation(animationForPlatform(), value: downloadManager.manualDownloads.description)
+					.animation(animationForPlatform(), value: showUpdateBanner)
 					.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
 						DispatchQueue.main.async {
 							UIAlertController.showAlertWithOk(
@@ -59,6 +87,7 @@ struct FeatherApp: App {
 					// dear god help me
 					.onAppear {
 						_setupTheme()
+						_checkForUpdates()
 					}
 					.overlay(StatusBarOverlay())
 				}
@@ -109,6 +138,45 @@ struct FeatherApp: App {
         } else {
             return .easeInOut(duration: 0.35)
         }
+    }
+    
+    private func _checkForUpdates() {
+        // Check for updates on GitHub
+        let urlString = "https://api.github.com/repos/aoyn1xw/Portal/releases/latest"
+        guard let url = URL(string: urlString) else { return }
+        
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 10
+        
+        URLSession.shared.dataTask(with: request) { [self] data, response, error in
+            guard let data = data, error == nil else {
+                AppLogManager.shared.warning("Failed to check for updates: \(error?.localizedDescription ?? "Unknown error")", category: "Updates")
+                return
+            }
+            
+            do {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                let release = try decoder.decode(GitHubRelease.self, from: data)
+                
+                // Get current version
+                let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+                
+                // Compare versions (simple string comparison for now)
+                if release.tagName.replacingOccurrences(of: "v", with: "") > currentVersion {
+                    DispatchQueue.main.async {
+                        self.latestVersion = release.tagName.replacingOccurrences(of: "v", with: "")
+                        self.showUpdateBanner = true
+                        AppLogManager.shared.info("Update available: \(release.tagName)", category: "Updates")
+                    }
+                } else {
+                    AppLogManager.shared.info("App is up to date", category: "Updates")
+                }
+            } catch {
+                AppLogManager.shared.warning("Failed to parse update info: \(error.localizedDescription)", category: "Updates")
+            }
+        }.resume()
     }
 	
 	private func _handleURL(_ url: URL) {

@@ -2138,7 +2138,11 @@ struct UpdatesReleasesView: View {
                 }
                 
                 do {
-                    let releases = try JSONDecoder().decode([GitHubRelease].self, from: data)
+                    // Configure JSONDecoder with ISO8601 date decoding strategy
+                    let decoder = JSONDecoder()
+                    decoder.dateDecodingStrategy = .iso8601
+                    
+                    let releases = try decoder.decode([GitHubRelease].self, from: data)
                     allReleases = showPrereleases ? releases : releases.filter { !$0.prerelease }
                     latestRelease = allReleases.first
                     AppLogManager.shared.success("Fetched \(releases.count) releases", category: "Developer")
