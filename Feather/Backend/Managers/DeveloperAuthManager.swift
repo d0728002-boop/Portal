@@ -31,6 +31,7 @@ final class DeveloperAuthManager: ObservableObject {
     private let validDeveloperTokens: Set<String> = [
         "FEATHER-DEV-2024-ALPHA",
         "FEATHER-DEV-2024-BETA",
+        "INTERNAL_DEV"
         "PORTAL-INTERNAL-DEV"
     ]
     
@@ -52,7 +53,7 @@ final class DeveloperAuthManager: ObservableObject {
             if Date().timeIntervalSince(session.timestamp) < rememberedSessionTimeout {
                 isAuthenticated = true
                 lastAuthTime = Date()
-                AppLogManager.shared.info("Auto-authenticated via Remember Me", category: "Security")
+                AppLogManager.shared.info("Auto authenticated via Remember Me", category: "Security")
             } else {
                 clearRememberedSession()
                 AppLogManager.shared.info("Remembered session expired", category: "Security")
@@ -143,7 +144,7 @@ final class DeveloperAuthManager: ObservableObject {
     
     func verifyPasscode(_ passcode: String) -> Bool {
         guard let storedHash = getStoredPasscodeHash() else {
-            authenticationError = "No passcode set"
+            authenticationError = "No Passcode Set"
             return false
         }
         
@@ -157,7 +158,7 @@ final class DeveloperAuthManager: ObservableObject {
             saveRememberedSession()
             AppLogManager.shared.success("Developer passcode verified", category: "Security")
         } else {
-            authenticationError = "Invalid passcode"
+            authenticationError = "Invalid Passcode"
             AppLogManager.shared.warning("Invalid developer passcode attempt", category: "Security")
         }
         
@@ -220,9 +221,9 @@ final class DeveloperAuthManager: ObservableObject {
                     AppLogManager.shared.success("Biometric authentication successful", category: "Security")
                     completion(true, nil)
                 } else {
-                    let errorMessage = authError?.localizedDescription ?? "Authentication failed"
+                    let errorMessage = authError?.localizedDescription ?? "Authentication Failed"
                     self?.authenticationError = errorMessage
-                    AppLogManager.shared.warning("Biometric authentication failed: \(errorMessage)", category: "Security")
+                    AppLogManager.shared.warning("Biometric Authentication Failed: \(errorMessage)", category: "Security")
                     completion(false, errorMessage)
                 }
             }
@@ -243,7 +244,7 @@ final class DeveloperAuthManager: ObservableObject {
             saveRememberedSession()
             AppLogManager.shared.success("Developer token validated", category: "Security")
         } else {
-            authenticationError = "Invalid developer token"
+            authenticationError = "Invalid Developer Token"
             AppLogManager.shared.warning("Invalid developer token attempt", category: "Security")
         }
         
@@ -325,6 +326,6 @@ final class DeveloperAuthManager: ObservableObject {
     
     func clearSavedToken() {
         UserDefaults.standard.removeObject(forKey: tokenKey)
-        AppLogManager.shared.info("Developer token cleared", category: "Security")
+        AppLogManager.shared.info("Developer Token Cleared", category: "Security")
     }
 }

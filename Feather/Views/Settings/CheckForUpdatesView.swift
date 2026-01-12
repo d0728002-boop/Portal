@@ -1,7 +1,7 @@
+// Created by dylan on 1.11.26
+
 import SwiftUI
 
-// MARK: - Check For Updates View
-/// A modern, user-friendly view for checking and displaying app updates
 struct CheckForUpdatesView: View {
     @StateObject private var updateManager = UpdateManager()
     @State private var showFullReleaseNotes = false
@@ -661,7 +661,7 @@ struct FullReleaseNotesView: View {
                         if let date = release.publishedAt {
                             HStack(spacing: 6) {
                                 Image(systemName: "calendar")
-                                Text("Released \(date.formatted(date: .long, time: .omitted))")
+                                Text("Released On \(date.formatted(date: .long, time: .omitted))")
                             }
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
@@ -803,7 +803,7 @@ class UpdateManager: ObservableObject {
                 }
                 
                 guard let data = data else {
-                    self.errorMessage = "No data received"
+                    self.errorMessage = "No Data Received"
                     HapticsManager.shared.error()
                     return
                 }
@@ -903,7 +903,7 @@ class UpdateManager: ObservableObject {
     
     private func downloadAsset(_ asset: GitHubAsset, fileName: String) {
         guard let url = URL(string: asset.browserDownloadUrl) else {
-            errorMessage = "Invalid download URL"
+            errorMessage = "Invalid Download URL"
             return
         }
         
@@ -984,7 +984,7 @@ class UpdateManager: ObservableObject {
         isDownloading = false
         downloadProgress = 0.0
         HapticsManager.shared.softImpact()
-        AppLogManager.shared.info("Download cancelled", category: "Updates")
+        AppLogManager.shared.info("Download Cancelled", category: "Updates")
     }
     
     private func compareVersions(_ v1: String, _ v2: String) -> ComparisonResult {
@@ -1170,7 +1170,7 @@ struct UpdateFinishedView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    Text("Ready to install")
+                    Text("Ready To Install")
                         .font(.caption)
                         .foregroundStyle(.green)
                 }
