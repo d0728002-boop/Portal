@@ -10,10 +10,16 @@ struct FeatherApp: App {
 	let heartbeat = HeartbeatManager.shared
 
 	@StateObject var downloadManager = DownloadManager.shared
+	@StateObject var networkMonitor = NetworkMonitor.shared
 	let storage = Storage.shared
 
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
+    @AppStorage("dev.updateBannerDismissed") private var updateBannerDismissed = false
     @State private var hasDylibsDetected: Bool = false
+    @State private var showUpdateBanner = false
+    @State private var latestVersion: String = ""
+    @State private var latestReleaseURL: String = ""
+    @State private var navigateToUpdates = false
 
 	var body: some Scene {
 		WindowGroup(content: {
@@ -25,6 +31,9 @@ struct FeatherApp: App {
 							// Prevent any navigation or state changes
 							UIApplication.shared.isIdleTimerDisabled = false
 						}
+				} else if !networkMonitor.isConnected && !UserDefaults.standard.bool(forKey: "dev.simulateOffline") {
+					// Show offline view when no connectivity (unless simulating)
+					OfflineView()
 				} else if !hasCompletedOnboarding {
 					if #available(iOS 17.0, *) {
 						OnboardingView()
@@ -39,15 +48,35 @@ struct FeatherApp: App {
 							}
 					}
 				} else {
-					VStack {
+					VStack(spacing: 0) {
+						// Modern Update Available banner at the top
+						if showUpdateBanner && !updateBannerDismissed {
+							UpdateAvailableView(
+								version: latestVersion,
+                                releaseURL: latestReleaseURL,
+								onDismiss: {
+									updateBannerDismissed = true
+									showUpdateBanner = false
+									AppLogManager.shared.info("Update banner dismissed", category: "Updates")
+								},
+								onNavigateToUpdates: {
+									navigateToUpdates = true
+									AppLogManager.shared.info("Navigating to Check for Updates", category: "Updates")
+								}
+							)
+							.transition(.move(edge: .top).combined(with: .opacity))
+						}
+						
 						DownloadHeaderView(downloadManager: downloadManager)
 							.transition(.move(edge: .top).combined(with: .opacity))
 						VariedTabbarView()
 							.environment(\.managedObjectContext, storage.context)
+							.environment(\.navigateToUpdates, $navigateToUpdates)
 							.onOpenURL(perform: _handleURL)
 							.transition(.move(edge: .top).combined(with: .opacity))
 					}
 					.animation(animationForPlatform(), value: downloadManager.manualDownloads.description)
+					.animation(animationForPlatform(), value: showUpdateBanner)
 					.onReceive(NotificationCenter.default.publisher(for: .heartbeatInvalidHost)) { _ in
 						DispatchQueue.main.async {
 							UIAlertController.showAlertWithOk(
@@ -59,6 +88,7 @@ struct FeatherApp: App {
 					// dear god help me
 					.onAppear {
 						_setupTheme()
+						_checkForUpdates()
 					}
 					.overlay(StatusBarOverlay())
 				}
@@ -109,6 +139,69 @@ struct FeatherApp: App {
         } else {
             return .easeInOut(duration: 0.35)
         }
+    }
+    
+    private func _checkForUpdates() {
+        // Check for updates on GitHub
+        let urlString = "https://api.github.com/repos/aoyn1xw/Portal/releases/latest"
+        guard let url = URL(string: urlString) else { return }
+        
+        var request = URLRequest(url: url)
+        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 10
+        
+        URLSession.shared.dataTask(with: request) { [self] data, response, error in
+            guard let data = data, error == nil else {
+                AppLogManager.shared.warning("Failed to check for updates: \(error?.localizedDescription ?? "Unknown error")", category: "Updates")
+                return
+            }
+            
+            do {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                let release = try decoder.decode(GitHubRelease.self, from: data)
+                
+                // Get current version
+                let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+                let releaseVersion = release.tagName.replacingOccurrences(of: "v", with: "")
+                
+                // Compare versions using proper semantic versioning
+                if self.compareVersions(releaseVersion, currentVersion) == .orderedDescending {
+                    DispatchQueue.main.async {
+                        self.latestVersion = releaseVersion
+                        self.latestReleaseURL = release.htmlUrl
+                        self.showUpdateBanner = true
+                        AppLogManager.shared.info("Update available: \(release.tagName)", category: "Updates")
+                    }
+                } else {
+                    AppLogManager.shared.info("App is up to date", category: "Updates")
+                }
+            } catch {
+                AppLogManager.shared.warning("Failed to parse update info: \(error.localizedDescription)", category: "Updates")
+            }
+        }.resume()
+    }
+    
+    /// Compare two semantic version strings (e.g., "1.2.3" vs "1.3.0")
+    /// Returns .orderedAscending if v1 < v2, .orderedDescending if v1 > v2, .orderedSame if equal
+    private func compareVersions(_ v1: String, _ v2: String) -> ComparisonResult {
+        let components1 = v1.split(separator: ".").compactMap { Int($0) }
+        let components2 = v2.split(separator: ".").compactMap { Int($0) }
+        
+        let maxLength = max(components1.count, components2.count)
+        
+        for i in 0..<maxLength {
+            let num1 = i < components1.count ? components1[i] : 0
+            let num2 = i < components2.count ? components2[i] : 0
+            
+            if num1 < num2 {
+                return .orderedAscending
+            } else if num1 > num2 {
+                return .orderedDescending
+            }
+        }
+        
+        return .orderedSame
     }
 	
 	private func _handleURL(_ url: URL) {
@@ -220,6 +313,29 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		AppLogManager.shared.info("Application launched successfully", category: "Lifecycle")
 		
 		return true
+	}
+	
+	// MARK: - UISceneSession Lifecycle (iPad Multi-Window Support)
+	
+	func application(
+		_ application: UIApplication,
+		configurationForConnecting connectingSceneSession: UISceneSession,
+		options: UIScene.ConnectionOptions
+	) -> UISceneConfiguration {
+		let configuration = UISceneConfiguration(
+			name: "Default Configuration",
+			sessionRole: connectingSceneSession.role
+		)
+		configuration.delegateClass = SceneDelegate.self
+		return configuration
+	}
+	
+	func application(
+		_ application: UIApplication,
+		didDiscardSceneSessions sceneSessions: Set<UISceneSession>
+	) {
+		// Called when the user discards a scene session (iPad multi-window)
+		AppLogManager.shared.info("Scene session discarded", category: "Lifecycle")
 	}
 	
 	private func _setupCrashHandler() {
@@ -351,4 +467,61 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		}
 	}
 
+}
+
+// MARK: - Scene Delegate (iPad Multi-Window Support)
+class SceneDelegate: NSObject, UIWindowSceneDelegate {
+	func scene(
+		_ scene: UIScene,
+		willConnectTo session: UISceneSession,
+		options connectionOptions: UIScene.ConnectionOptions
+	) {
+		// Configure the scene for multi-window support
+		guard let windowScene = scene as? UIWindowScene else { return }
+		
+		// Set up window-specific configurations
+		AppLogManager.shared.info("Scene connected: \(session.persistentIdentifier)", category: "Lifecycle")
+		
+		// Apply theme to the window
+		if let style = UIUserInterfaceStyle(rawValue: UserDefaults.standard.integer(forKey: "Feather.userInterfaceStyle")) {
+			windowScene.windows.first?.overrideUserInterfaceStyle = style
+		}
+		
+		// Apply tint color
+		let colorType = UserDefaults.standard.string(forKey: "Feather.userTintColorType") ?? "solid"
+		if colorType == "gradient" {
+			let gradientStartHex = UserDefaults.standard.string(forKey: "Feather.userTintGradientStart") ?? "#0077BE"
+			windowScene.windows.first?.tintColor = UIColor(SwiftUI.Color(hex: gradientStartHex))
+		} else {
+			windowScene.windows.first?.tintColor = UIColor(SwiftUI.Color(hex: UserDefaults.standard.string(forKey: "Feather.userTintColor") ?? "#0077BE"))
+		}
+	}
+	
+	func sceneDidDisconnect(_ scene: UIScene) {
+		// Called when scene is being released by the system
+		AppLogManager.shared.info("Scene disconnected", category: "Lifecycle")
+	}
+	
+	func sceneDidBecomeActive(_ scene: UIScene) {
+		// Called when scene has moved from inactive to active state
+		AppLogManager.shared.debug("Scene became active", category: "Lifecycle")
+	}
+	
+	func sceneWillResignActive(_ scene: UIScene) {
+		// Called when scene is about to move from active to inactive state
+		AppLogManager.shared.debug("Scene will resign active", category: "Lifecycle")
+	}
+	
+	func sceneWillEnterForeground(_ scene: UIScene) {
+		// Called as scene transitions from background to foreground
+		AppLogManager.shared.debug("Scene entering foreground", category: "Lifecycle")
+	}
+	
+	func sceneDidEnterBackground(_ scene: UIScene) {
+		// Called as scene transitions from foreground to background
+		AppLogManager.shared.debug("Scene entered background", category: "Lifecycle")
+		
+		// Save any pending changes
+		Storage.shared.saveContext()
+	}
 }

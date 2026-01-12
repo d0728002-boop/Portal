@@ -7,6 +7,25 @@ import NimbleViews
 struct SourceNewsCardInfoView: View {
 	var new: ASRepository.News
 	
+	// MARK: - Placeholder View
+	private var placeholderView: some View {
+		ZStack {
+			LinearGradient(
+				colors: [
+					Color.accentColor.opacity(0.2),
+					Color.accentColor.opacity(0.1),
+					Color.accentColor.opacity(0.05)
+				],
+				startPoint: .topLeading,
+				endPoint: .bottomTrailing
+			)
+			
+			Image(systemName: "newspaper.fill")
+				.font(.system(size: 64, weight: .light))
+				.foregroundStyle(Color.accentColor.opacity(0.3))
+		}
+	}
+	
 	// MARK: Body
 	var body: some View {
 		NavigationStack {
@@ -14,24 +33,13 @@ struct SourceNewsCardInfoView: View {
 				VStack(alignment: .leading, spacing: 24) {
 					// Modern image header
 					ZStack(alignment: .bottomLeading) {
-						let placeholderView = {
-							LinearGradient(
-								colors: [
-									Color.accentColor.opacity(0.3),
-									Color.accentColor.opacity(0.1)
-								],
-								startPoint: .topLeading,
-								endPoint: .bottomTrailing
-							)
-						}()
-						
 						if let iconURL = new.imageURL {
 							LazyImage(url: iconURL) { state in
 								if let image = state.image {
 									Color.clear.overlay(
-									image
-										.resizable()
-										.aspectRatio(contentMode: .fill)
+										image
+											.resizable()
+											.aspectRatio(contentMode: .fill)
 									)
 								} else {
 									placeholderView
@@ -41,10 +49,21 @@ struct SourceNewsCardInfoView: View {
 							placeholderView
 						}
 					}
-					.frame(height: 260)
+					.frame(height: 280)
 					.frame(maxWidth: .infinity)
-					.clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-					.shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
+					.clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+					.overlay(
+						RoundedRectangle(cornerRadius: 24, style: .continuous)
+							.stroke(
+								LinearGradient(
+									colors: [Color.white.opacity(0.2), Color.clear],
+									startPoint: .topLeading,
+									endPoint: .bottomTrailing
+								),
+								lineWidth: 1
+							)
+					)
+					.shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
 					
 					// Content section
 					VStack(alignment: .leading, spacing: 16) {
@@ -58,18 +77,23 @@ struct SourceNewsCardInfoView: View {
 						if let date = new.date?.date {
 							HStack(spacing: 6) {
 								Image(systemName: "calendar")
-									.font(.caption)
-									.foregroundStyle(.secondary)
-								Text(date.formatted(date: .long, time: .omitted))
-									.font(.subheadline)
-									.foregroundStyle(.secondary)
+									.font(.system(size: 11, weight: .semibold))
+									.foregroundStyle(.white)
+								Text(date.formatted(date: .abbreviated, time: .omitted))
+									.font(.system(size: 12, weight: .semibold))
+									.foregroundStyle(.white)
 							}
-							.padding(.vertical, 6)
-							.padding(.horizontal, 12)
+							.padding(.vertical, 8)
+							.padding(.horizontal, 14)
 							.background(
-								Capsule()
-									.fill(Color.secondary.opacity(0.15))
+								LinearGradient(
+									colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+									startPoint: .leading,
+									endPoint: .trailing
+								)
 							)
+							.clipShape(Capsule())
+							.shadow(color: Color.accentColor.opacity(0.4), radius: 6, x: 0, y: 3)
 						}
 						
 						// Caption
@@ -86,20 +110,24 @@ struct SourceNewsCardInfoView: View {
 							Button {
 								UIApplication.shared.open(url)
 							} label: {
-								HStack {
+								HStack(spacing: 10) {
 									Text(.localized("Read More"))
-										.font(.system(size: 16, weight: .semibold))
+										.font(.system(size: 17, weight: .bold))
 									Image(systemName: "arrow.up.right")
-										.font(.system(size: 14, weight: .semibold))
+										.font(.system(size: 15, weight: .bold))
 								}
 								.foregroundStyle(.white)
-								.padding(.horizontal, 24)
-								.padding(.vertical, 14)
+								.frame(maxWidth: .infinity)
+								.padding(.vertical, 16)
 								.background(
-									Capsule()
-										.fill(Color.accentColor)
+									LinearGradient(
+										colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+										startPoint: .leading,
+										endPoint: .trailing
+									)
 								)
-								.shadow(color: Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
+								.clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+								.shadow(color: Color.accentColor.opacity(0.4), radius: 12, x: 0, y: 6)
 							}
 							.buttonStyle(.plain)
 							.padding(.top, 8)

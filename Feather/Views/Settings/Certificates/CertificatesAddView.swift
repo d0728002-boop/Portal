@@ -3,135 +3,410 @@ import NimbleViews
 import UniformTypeIdentifiers
 import ZIPFoundation
 
-// MARK: - View
+// MARK: - Modern Compact Certificate Add View
 struct CertificatesAddView: View {
-	@Environment(\.dismiss) private var dismiss
-	
-	@State private var _p12URL: URL? = nil
-	@State private var _provisionURL: URL? = nil
-	@State private var _p12Password: String = ""
-	@State private var _certificateName: String = ""
-	
-	@State private var _isImportingP12Presenting = false
-	@State private var _isImportingMobileProvisionPresenting = false
-	@State private var _isImportingZipPresenting = false
-	
-	var saveButtonDisabled: Bool {
-		_p12URL == nil || _provisionURL == nil
-	}
-	
-	// MARK: Body
-	var body: some View {
-		NBNavigationView(.localized("New Certificate"), displayMode: .inline) {
-			ZStack {
-				// Background gradient
-				LinearGradient(
-					colors: [
-						Color.accentColor.opacity(0.03),
-						Color.clear
-					],
-					startPoint: .top,
-					endPoint: .bottom
-				)
-				.ignoresSafeArea()
-				
-				Form {
-					Section {
-						_importButton(.localized("Import P12 File"), file: _p12URL, iconName: "doc.badge.key.fill") {
-							_isImportingP12Presenting = true
-						}
-						_importButton(.localized("Import Provisioning File"), file: _provisionURL, iconName: "doc.fill.badge.gearshape") {
-							_isImportingMobileProvisionPresenting = true
-						}
-						_importButton(.localized("Import From ZIP"), file: nil, iconName: "doc.zipper.fill", showCheckmark: false) {
-							_isImportingZipPresenting = true
-						}
-					} header: {
-						HStack(spacing: 8) {
-							Image(systemName: "folder.fill.badge.plus")
-								.font(.caption)
-								.foregroundStyle(Color.accentColor)
-							Text(.localized("Files"))
-								.font(.subheadline)
-								.fontWeight(.medium)
-						}
-						.textCase(.none)
-					}
-					
-					Section {
-						HStack(spacing: 10) {
-							Image(systemName: "lock.shield.fill")
-								.foregroundStyle(Color.orange)
-								.font(.body)
-							SecureField(.localized("Password (Optional)"), text: $_p12Password)
-						}
-						.padding(.vertical, 2)
-						
-						HStack(spacing: 10) {
-							Image(systemName: "tag.fill")
-								.foregroundStyle(Color.accentColor)
-								.font(.body)
-							TextField(.localized("Nickname (Optional)"), text: $_certificateName)
-						}
-						.padding(.vertical, 2)
-					} header: {
-						HStack(spacing: 8) {
-							Image(systemName: "textformat")
-								.font(.caption)
-								.foregroundStyle(Color.accentColor)
-							Text(.localized("Certificate Details"))
-								.font(.subheadline)
-								.fontWeight(.medium)
-						}
-						.textCase(.none)
-					}
-				}
-				.scrollContentBackground(.hidden)
-			}
-			.toolbar {
-				NBToolbarButton(role: .cancel)
-				
-				NBToolbarButton(
-					.localized("Save"),
-					style: .text,
-					placement: .confirmationAction,
-					isDisabled: saveButtonDisabled
-				) {
-					_saveCertificate()
-				}
-			}
-			.sheet(isPresented: $_isImportingP12Presenting) {
-				FileImporterRepresentableView(
-					allowedContentTypes: [.p12],
-					onDocumentsPicked: { urls in
-						guard let selectedFileURL = urls.first else { return }
-						self._p12URL = selectedFileURL
-					}
-				)
-				.ignoresSafeArea()
-			}
-			.sheet(isPresented: $_isImportingMobileProvisionPresenting) {
-				FileImporterRepresentableView(
-					allowedContentTypes: [.mobileProvision],
-					onDocumentsPicked: { urls in
-						guard let selectedFileURL = urls.first else { return }
-						self._provisionURL = selectedFileURL
-					}
-				)
-				.ignoresSafeArea()
-			}
-			.sheet(isPresented: $_isImportingZipPresenting) {
-				FileImporterRepresentableView(
-					allowedContentTypes: [.certificateZip],
-					onDocumentsPicked: { urls in
-						guard let selectedFileURL = urls.first else { return }
-						_handleZipImport(selectedFileURL)
-					}
-				)
-				.ignoresSafeArea()
-			}
-		}
-	}
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var _p12URL: URL? = nil
+    @State private var _provisionURL: URL? = nil
+    @State private var _p12Password: String = ""
+    @State private var _certificateName: String = ""
+    
+    @State private var _isImportingP12Presenting = false
+    @State private var _isImportingMobileProvisionPresenting = false
+    @State private var _isImportingZipPresenting = false
+    
+    var saveButtonDisabled: Bool {
+        _p12URL == nil || _provisionURL == nil
+    }
+    
+    var body: some View {
+        NavigationView {
+            contentView
+        }
+    }
+    
+    // MARK: - Content View
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 16) {
+                fileImportSection
+                dividerSection
+                inputFieldsSection
+                Spacer(minLength: 16)
+                saveButton
+            }
+            .padding(20)
+        }
+        .background(Color(UIColor.systemGroupedBackground))
+        .navigationTitle("New Certificate")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    dismiss()
+                }
+            }
+        }
+        .sheet(isPresented: $_isImportingP12Presenting) {
+            p12ImportSheet
+        }
+        .sheet(isPresented: $_isImportingMobileProvisionPresenting) {
+            provisionImportSheet
+        }
+        .sheet(isPresented: $_isImportingZipPresenting) {
+            zipImportSheet
+        }
+    }
+    
+    // MARK: - File Import Section
+    private var fileImportSection: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                compactImportCard(
+                    title: "P12",
+                    subtitle: _p12URL?.lastPathComponent ?? "Select",
+                    icon: "key.fill",
+                    isSelected: _p12URL != nil,
+                    color: .orange
+                ) {
+                    _isImportingP12Presenting = true
+                }
+                
+                compactImportCard(
+                    title: "Provision",
+                    subtitle: _provisionURL?.lastPathComponent ?? "Select",
+                    icon: "doc.badge.gearshape.fill",
+                    isSelected: _provisionURL != nil,
+                    color: .blue
+                ) {
+                    _isImportingMobileProvisionPresenting = true
+                }
+            }
+            
+            zipImportButton
+        }
+    }
+    
+    // MARK: - ZIP Import Button
+    private var zipImportButton: some View {
+        Button {
+            _isImportingZipPresenting = true
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "doc.zipper")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("Import ZIP")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                LinearGradient(
+                    colors: [Color.purple, Color.purple.opacity(0.8)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .shadow(color: Color.purple.opacity(0.2), radius: 4, x: 0, y: 2)
+        }
+    }
+    
+    // MARK: - Compact Import Card Small (for side by side layout)
+    @ViewBuilder
+    private func compactImportCardSmall(
+        title: String,
+        subtitle: String,
+        icon: String,
+        isSelected: Bool,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    isSelected ? Color.green.opacity(0.2) : color.opacity(0.2),
+                                    isSelected ? Color.green.opacity(0.1) : color.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : icon)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(isSelected ? .green : color)
+                }
+                
+                VStack(spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(isSelected ? .secondary : .primary)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(isSelected ? .green : .secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                isSelected ? Color.green.opacity(0.08) : color.opacity(0.06),
+                                isSelected ? Color.green.opacity(0.04) : color.opacity(0.03)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        isSelected ? Color.green.opacity(0.3) : color.opacity(0.2),
+                        lineWidth: 1.5
+                    )
+            )
+        }
+        .disabled(isSelected)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+    
+    // MARK: - Divider Section
+    private var dividerSection: some View {
+        Rectangle()
+            .fill(Color(UIColor.separator).opacity(0.3))
+            .frame(height: 1)
+            .padding(.vertical, 4)
+    }
+    
+    // MARK: - Input Fields Section
+    private var inputFieldsSection: some View {
+        VStack(spacing: 12) {
+            passwordField
+            nicknameField
+        }
+    }
+    
+    // MARK: - Password Field
+    private var passwordField: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.orange.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.orange)
+            }
+            
+            SecureField("Password (Optional)", text: $_p12Password)
+                .font(.system(size: 15))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+        )
+    }
+    
+    // MARK: - Nickname Field
+    private var nicknameField: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+            }
+            
+            TextField("Nickname (Optional)", text: $_certificateName)
+                .font(.system(size: 15))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+        )
+    }
+    
+    // MARK: - Save Button
+    private var saveButton: some View {
+        Button {
+            _saveCertificate()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Save Certificate")
+                    .font(.system(size: 16, weight: .bold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(
+                        saveButtonDisabled
+                        ? AnyShapeStyle(Color.gray.opacity(0.5))
+                        : AnyShapeStyle(LinearGradient(
+                            colors: [.green, .green.opacity(0.8)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                    )
+            )
+            .shadow(color: saveButtonDisabled ? .clear : .green.opacity(0.3), radius: 8, x: 0, y: 4)
+        }
+        .disabled(saveButtonDisabled)
+    }
+    
+    // MARK: - Sheet Views
+    private var p12ImportSheet: some View {
+        FileImporterRepresentableView(
+            allowedContentTypes: [.p12],
+            onDocumentsPicked: { urls in
+                guard let selectedFileURL = urls.first else { return }
+                self._p12URL = selectedFileURL
+            }
+        )
+        .ignoresSafeArea()
+    }
+    
+    private var provisionImportSheet: some View {
+        FileImporterRepresentableView(
+            allowedContentTypes: [.mobileProvision],
+            onDocumentsPicked: { urls in
+                guard let selectedFileURL = urls.first else { return }
+                self._provisionURL = selectedFileURL
+            }
+        )
+        .ignoresSafeArea()
+    }
+    
+    private var zipImportSheet: some View {
+        FileImporterRepresentableView(
+            allowedContentTypes: [.certificateZip],
+            onDocumentsPicked: { urls in
+                guard let selectedFileURL = urls.first else { return }
+                _handleZipImport(selectedFileURL)
+            }
+        )
+        .ignoresSafeArea()
+    }
+    
+    // MARK: - Compact Import Card
+    @ViewBuilder
+    private func compactImportCard(
+        title: String,
+        subtitle: String,
+        icon: String,
+        isSelected: Bool,
+        color: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    isSelected ? Color.green.opacity(0.2) : color.opacity(0.2),
+                                    isSelected ? Color.green.opacity(0.1) : color.opacity(0.1)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(
+                                    isSelected ? Color.green.opacity(0.3) : color.opacity(0.3),
+                                    lineWidth: 1.5
+                                )
+                        )
+                    
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : icon)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(isSelected ? .green : color)
+                        .shadow(color: isSelected ? .green.opacity(0.3) : color.opacity(0.3), radius: 2, x: 0, y: 1)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(isSelected ? .secondary : .primary)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(isSelected ? .green : .secondary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                if !isSelected {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .padding(12)
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    isSelected ? Color.green.opacity(0.08) : color.opacity(0.06),
+                                    isSelected ? Color.green.opacity(0.04) : color.opacity(0.03)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(
+                            isSelected ? 
+                                LinearGradient(
+                                    colors: [Color.green.opacity(0.4), Color.green.opacity(0.2)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ) :
+                                LinearGradient(
+                                    colors: [color.opacity(0.2), color.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                            lineWidth: 2
+                        )
+                }
+            )
+            .shadow(color: isSelected ? .green.opacity(0.2) : color.opacity(0.1), radius: 6, x: 0, y: 3)
+        }
+        .disabled(isSelected)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
 }
 
 // MARK: - Extension: View
