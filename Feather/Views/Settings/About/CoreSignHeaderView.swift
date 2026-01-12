@@ -50,8 +50,8 @@ struct CoreSignHeaderView: View {
     private var mainContent: some View {
         VStack(spacing: 0) {
             headerContent
-                .padding(.vertical, 12)
-                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
         }
         .background(backgroundShape)
         .overlay(borderShape)
@@ -59,7 +59,7 @@ struct CoreSignHeaderView: View {
     }
     
     private var headerContent: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             appIcon
             titleSection
             Spacer()
@@ -74,27 +74,36 @@ struct CoreSignHeaderView: View {
             Image(uiImage: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 40, height: 40)
-                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .shadow(color: .accentColor.opacity(0.2), radius: 4, x: 0, y: 2)
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
+                )
+                .shadow(color: .accentColor.opacity(0.25), radius: 6, x: 0, y: 3)
         } else {
             placeholderIcon
         }
-    }
-    
-    private var placeholderIcon: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
+    }10, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [.accentColor, .accentColor.opacity(0.7)],
+                        colors: [.accentColor, .accentColor.opacity(0.75)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 40, height: 40)
+                .frame(width: 44, height: 44)
             
             Image(systemName: "app.badge")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .symbolRenderingMode(.hierarchical)
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+        )
+        .shadow(color: .accentColor.opacity(0.25), radius: 6, x: 0, y: 3
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.white)
         }
@@ -102,13 +111,20 @@ struct CoreSignHeaderView: View {
     }
     
     private var titleSection: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             Text("Portal")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.primary, .primary.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
             
             Text(currentSubtitle)
-                .font(.caption2)
+                .font(.caption)
+                .fontWeight(.medium)
                 .foregroundStyle(.secondary)
                 .transition(.asymmetric(
                     insertion: .move(edge: .bottom).combined(with: .opacity),
@@ -128,56 +144,101 @@ struct CoreSignHeaderView: View {
     }
     
     private var versionBadge: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 7))
-                .foregroundStyle(Color.accentColor)
-            Text("1.0.2")
-                .font(.system(size: 9))
-                .fontWeight(.semibold)
-            Text("Release")
                 .font(.system(size: 8))
-                .fontWeight(.bold)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(Color.accentColor)
+            Text("1.1.0")
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+            Text("Release")
+                .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(.white)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1.5)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(
                     Capsule()
-                        .fill(Color.orange)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.orange, Color.orange.opacity(0.8)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                 )
         }
         .foregroundStyle(.primary)
-        .padding(.horizontal, 7)
-        .padding(.vertical, 3)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(Color.accentColor.opacity(0.12))
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.accentColor.opacity(0.15),
+                            Color.accentColor.opacity(0.08)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            Capsule()
+                .strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 0.5)
         )
     }
     
     private var creditsButton: some View {
         Button {
             showCredits = true
+            HapticsManager.shared.softImpact()
         } label: {
-            HStack(spacing: 3) {
+            HStack(spacing: 4) {
                 Image(systemName: "person.3.fill")
-                    .font(.system(size: 8))
+                    .font(.system(size: 9))
+                    .symbolRenderingMode(.hierarchical)
                 Text(.localized("Credits"))
-                    .font(.system(size: 10))
-                    .fontWeight(.semibold)
+                    .font(.system(size: 11, weight: .semibold))
             }
             .foregroundStyle(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
             .background(
                 Capsule()
-                    .fill(Color.accentColor)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.accentColor, Color.accentColor.opacity(0.85)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )6, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        Color(uiColor: .secondarySystemGroupedBackground),
+                        Color(uiColor: .secondarySystemGroupedBackground).opacity(0.95)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
-            .shadow(color: .accentColor.opacity(0.25), radius: 3, x: 0, y: 1.5)
-        }
+            .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 4)
     }
     
-    private var backgroundShape: some View {
+    private var borderShape: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        Color.accentColor.opacity(0.15),
+                        Color(uiColor: .separator).opacity(0.3)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(Color(uiColor: .secondarySystemGroupedBackground))
             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 3)

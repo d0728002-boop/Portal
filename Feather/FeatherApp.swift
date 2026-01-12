@@ -315,6 +315,29 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		return true
 	}
 	
+	// MARK: - UISceneSession Lifecycle (iPad Multi-Window Support)
+	
+	func application(
+		_ application: UIApplication,
+		configurationForConnecting connectingSceneSession: UISceneSession,
+		options: UIScene.ConnectionOptions
+	) -> UISceneConfiguration {
+		let configuration = UISceneConfiguration(
+			name: "Default Configuration",
+			sessionRole: connectingSceneSession.role
+		)
+		configuration.delegateClass = SceneDelegate.self
+		return configuration
+	}
+	
+	func application(
+		_ application: UIApplication,
+		didDiscardSceneSessions sceneSessions: Set<UISceneSession>
+	) {
+		// Called when the user discards a scene session (iPad multi-window)
+		AppLogManager.shared.info("Scene session discarded", category: "Lifecycle")
+	}
+	
 	private func _setupCrashHandler() {
 		// Set up NSException handler for crash logging
 		NSSetUncaughtExceptionHandler { exception in
@@ -444,4 +467,61 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 		}
 	}
 
+}
+
+// MARK: - Scene Delegate (iPad Multi-Window Support)
+class SceneDelegate: NSObject, UIWindowSceneDelegate {
+	func scene(
+		_ scene: UIScene,
+		willConnectTo session: UISceneSession,
+		options connectionOptions: UIScene.ConnectionOptions
+	) {
+		// Configure the scene for multi-window support
+		guard let windowScene = scene as? UIWindowScene else { return }
+		
+		// Set up window-specific configurations
+		AppLogManager.shared.info("Scene connected: \(session.persistentIdentifier)", category: "Lifecycle")
+		
+		// Apply theme to the window
+		if let style = UIUserInterfaceStyle(rawValue: UserDefaults.standard.integer(forKey: "Feather.userInterfaceStyle")) {
+			windowScene.windows.first?.overrideUserInterfaceStyle = style
+		}
+		
+		// Apply tint color
+		let colorType = UserDefaults.standard.string(forKey: "Feather.userTintColorType") ?? "solid"
+		if colorType == "gradient" {
+			let gradientStartHex = UserDefaults.standard.string(forKey: "Feather.userTintGradientStart") ?? "#0077BE"
+			windowScene.windows.first?.tintColor = UIColor(SwiftUI.Color(hex: gradientStartHex))
+		} else {
+			windowScene.windows.first?.tintColor = UIColor(SwiftUI.Color(hex: UserDefaults.standard.string(forKey: "Feather.userTintColor") ?? "#0077BE"))
+		}
+	}
+	
+	func sceneDidDisconnect(_ scene: UIScene) {
+		// Called when scene is being released by the system
+		AppLogManager.shared.info("Scene disconnected", category: "Lifecycle")
+	}
+	
+	func sceneDidBecomeActive(_ scene: UIScene) {
+		// Called when scene has moved from inactive to active state
+		AppLogManager.shared.debug("Scene became active", category: "Lifecycle")
+	}
+	
+	func sceneWillResignActive(_ scene: UIScene) {
+		// Called when scene is about to move from active to inactive state
+		AppLogManager.shared.debug("Scene will resign active", category: "Lifecycle")
+	}
+	
+	func sceneWillEnterForeground(_ scene: UIScene) {
+		// Called as scene transitions from background to foreground
+		AppLogManager.shared.debug("Scene entering foreground", category: "Lifecycle")
+	}
+	
+	func sceneDidEnterBackground(_ scene: UIScene) {
+		// Called as scene transitions from foreground to background
+		AppLogManager.shared.debug("Scene entered background", category: "Lifecycle")
+		
+		// Save any pending changes
+		Storage.shared.save()
+	}
 }

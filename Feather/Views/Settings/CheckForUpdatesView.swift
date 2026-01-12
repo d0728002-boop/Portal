@@ -672,9 +672,7 @@ struct FullReleaseNotesView: View {
                     
                     // Release notes content
                     if let body = release.body, !body.isEmpty {
-                        Text(body)
-                            .font(.body)
-                            .foregroundStyle(.primary)
+                        ModernMarkdownView(markdown: body)
                     } else {
                         Text("No release notes available.")
                             .font(.body)
@@ -1327,6 +1325,272 @@ struct UpdateFinishedView: View {
                     AppLogManager.shared.error("Failed to add to library: \(error.localizedDescription)", category: "Updates")
                 }
             }
+        }
+    }
+}
+
+// MARK: - Modern Markdown View
+struct ModernMarkdownView: View {
+    let markdown: String
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(parseMarkdown(markdown).enumerated()), id: \.offset) { _, element in
+                renderElement(element)
+                    .padding(.bottom, element.bottomPadding)
+            }
+        }
+    }
+    
+    private func parseMarkdown(_ text: String) -> [MarkdownElement] {
+        var elements: [MarkdownElement] = []
+        let lines = text.components(separatedBy: .newlines)
+        var currentCodeBlock: [String] = []
+        var inCodeBlock = false
+        var currentList: [String] = []
+        var inList = false
+        
+        for line in lines {
+            // Code block detection
+            if line.hasPrefix("```") {
+                if inCodeBlock {
+                    // End code block
+                    elements.append(.codeBlock(currentCodeBlock.joined(separator: "\n")))
+                    currentCodeBlock = []
+                    inCodeBlock = false
+                } else {
+                    // Start code block
+                    if inList {
+                        elements.append(.bulletList(currentList))
+                        currentList = []
+                        inList = false
+                    }
+                    inCodeBlock = true
+                }
+                continue
+            }
+            
+            if inCodeBlock {
+                currentCodeBlock.append(line)
+                continue
+            }
+            
+            // Headers
+            if line.hasPrefix("### ") {
+                if inList {
+                    elements.append(.bulletList(currentList))
+                    currentList = []
+                    inList = false
+                }
+                elements.append(.header3(String(line.dropFirst(4))))
+                continue
+            } else if line.hasPrefix("## ") {
+                if inList {
+                    elements.append(.bulletList(currentList))
+                    currentList = []
+                    inList = false
+                }
+                elements.append(.header2(String(line.dropFirst(3))))
+                continue
+            } else if line.hasPrefix("# ") {
+                if inList {
+                    elements.append(.bulletList(currentList))
+                    currentList = []
+                    inList = false
+                }
+                elements.append(.header1(String(line.dropFirst(2))))
+                continue
+            }
+            
+            // Lists
+            if line.hasPrefix("- ") || line.hasPrefix("* ") {
+                inList = true
+                currentList.append(String(line.dropFirst(2)))
+                continue
+            } else if inList && !line.trimmingCharacters(in: .whitespaces).isEmpty {
+                elements.append(.bulletList(currentList))
+                currentList = []
+                inList = false
+            }
+            
+            // Empty lines
+            if line.trimmingCharacters(in: .whitespaces).isEmpty {
+                if inList {
+                    elements.append(.bulletList(currentList))
+                    currentList = []
+                    inList = false
+                }
+                continue
+            }
+            
+            // Regular paragraphs
+            if !inList {
+                elements.append(.paragraph(line))
+            }
+        }
+        
+        // Handle any remaining list items
+        if inList {
+            elements.append(.bulletList(currentList))
+        }
+        
+        return elements
+    }
+    
+    @ViewBuilder
+    private func renderElement(_ element: MarkdownElement) -> some View {
+        switch element {
+        case .header1(let text):
+            Text(processInlineMarkdown(text))
+                .font(.title.bold())
+                .foregroundStyle(.primary)
+                .padding(.top, 8)
+                
+        case .header2(let text):
+            Text(processInlineMarkdown(text))
+                .font(.title2.bold())
+                .foregroundStyle(.primary)
+                .padding(.top, 6)
+                
+        case .header3(let text):
+            Text(processInlineMarkdown(text))
+                .font(.title3.bold())
+                .foregroundStyle(.primary)
+                .padding(.top, 4)
+                
+        case .paragraph(let text):
+            Text(processInlineMarkdown(text))
+                .font(.body)
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                
+        case .bulletList(let items):
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .font(.body.bold())
+                            .foregroundStyle(Color.accentColor)
+                            .frame(width: 12)
+                        Text(processInlineMarkdown(item))
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(.leading, 4)
+            
+        case .codeBlock(let code):
+            ScrollView(.horizontal, showsIndicators: false) {
+                Text(code)
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(colorScheme == .dark ? .green : .purple)
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color(UIColor.tertiarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.accentColor.opacity(0.2), lineWidth: 1)
+            )
+        }
+    }
+    
+    private func processInlineMarkdown(_ text: String) -> AttributedString {
+        var attributedString = AttributedString(text)
+        
+        // Bold (**text** or __text__)
+        let boldPattern = #"\*\*(.+?)\*\*|__(.+?)__"#
+        if let regex = try? NSRegularExpression(pattern: boldPattern) {
+            let nsRange = NSRange(text.startIndex..., in: text)
+            let matches = regex.matches(in: text, range: nsRange)
+            
+            for match in matches.reversed() {
+                if let range = Range(match.range, in: text) {
+                    let content = String(text[range])
+                        .replacingOccurrences(of: "**", with: "")
+                        .replacingOccurrences(of: "__", with: "")
+                    
+                    if let attrRange = Range(match.range, in: attributedString) {
+                        attributedString.replaceSubrange(attrRange, with: AttributedString(content))
+                        if let boldRange = attributedString.range(of: content) {
+                            attributedString[boldRange].font = .body.bold()
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Italic (*text* or _text_) - single only
+        let italicPattern = #"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)|(?<!_)_(?!_)(.+?)(?<!_)_(?!_)"#
+        if let regex = try? NSRegularExpression(pattern: italicPattern) {
+            let nsRange = NSRange(text.startIndex..., in: text)
+            let matches = regex.matches(in: text, range: nsRange)
+            
+            for match in matches.reversed() {
+                if let range = Range(match.range, in: text) {
+                    let content = String(text[range])
+                        .replacingOccurrences(of: "*", with: "")
+                        .replacingOccurrences(of: "_", with: "")
+                    
+                    if let attrRange = Range(match.range, in: attributedString) {
+                        attributedString.replaceSubrange(attrRange, with: AttributedString(content))
+                        if let italicRange = attributedString.range(of: content) {
+                            attributedString[italicRange].font = .body.italic()
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Inline code (`code`)
+        let codePattern = #"`(.+?)`"#
+        if let regex = try? NSRegularExpression(pattern: codePattern) {
+            let nsRange = NSRange(text.startIndex..., in: text)
+            let matches = regex.matches(in: text, range: nsRange)
+            
+            for match in matches.reversed() {
+                if let range = Range(match.range, in: text) {
+                    let content = String(text[range])
+                        .replacingOccurrences(of: "`", with: "")
+                    
+                    if let attrRange = Range(match.range, in: attributedString) {
+                        attributedString.replaceSubrange(attrRange, with: AttributedString(content))
+                        if let codeRange = attributedString.range(of: content) {
+                            attributedString[codeRange].font = .body.monospaced()
+                            attributedString[codeRange].foregroundColor = .accentColor
+                        }
+                    }
+                }
+            }
+        }
+        
+        return attributedString
+    }
+}
+
+// MARK: - Markdown Elements
+enum MarkdownElement {
+    case header1(String)
+    case header2(String)
+    case header3(String)
+    case paragraph(String)
+    case bulletList([String])
+    case codeBlock(String)
+    
+    var bottomPadding: CGFloat {
+        switch self {
+        case .header1: return 12
+        case .header2: return 10
+        case .header3: return 8
+        case .paragraph: return 8
+        case .bulletList: return 12
+        case .codeBlock: return 12
         }
     }
 }

@@ -3215,6 +3215,25 @@ struct UpdatesReleasesView: View {
                     }
                 }
                 
+                if UserDefaults.standard.bool(forKey: "dev.forceShowUpdate") {
+                    Button {
+                        stopForcedUpdate()
+                    } label: {
+                        HStack {
+                            Image(systemName: "xmark.circle")
+                                .foregroundStyle(.red)
+                            Text("Stop Force Show Update")
+                            Spacer()
+                            Text("Reset")
+                                .font(.caption)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(Color.red))
+                        }
+                    }
+                }
+                
                 Text("Simulates an available update to test the Check for Updates view and update banner.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -3322,6 +3341,18 @@ struct UpdatesReleasesView: View {
         HapticsManager.shared.success()
         AppLogManager.shared.info("Force showing fake update v99.0.0", category: "Developer")
     }
+    
+    private func stopForcedUpdate() {
+        // Clear the forced update flags
+        UserDefaults.standard.removeObject(forKey: "dev.forceShowUpdate")
+        UserDefaults.standard.removeObject(forKey: "dev.fakeUpdateVersion")
+        
+        // Check for real updates again
+        checkForUpdates()
+        
+        HapticsManager.shared.success()
+        AppLogManager.shared.info("Stopped forcing fake update, checking for real updates", category: "Developer")
+    }
 }
 
 // MARK: - Force Show Update Notification
@@ -3385,8 +3416,10 @@ struct ReleaseDetailView: View {
             
             if let body = release.body, !body.isEmpty {
                 Section(header: Text("Release Notes")) {
-                    Text(body)
-                        .font(.system(.body, design: .monospaced))
+                    ScrollView {
+                        ModernMarkdownView(markdown: body)
+                            .padding(.vertical, 8)
+                    }
                 }
             }
             
