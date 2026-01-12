@@ -82,32 +82,28 @@ struct CoreSignHeaderView: View {
                 )
                 .shadow(color: .accentColor.opacity(0.25), radius: 6, x: 0, y: 3)
         } else {
-            placeholderIcon
-        }
-    }10, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [.accentColor, .accentColor.opacity(0.75)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [.accentColor, .accentColor.opacity(0.75)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-                .frame(width: 44, height: 44)
-            
-            Image(systemName: "app.badge")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.white)
-                .symbolRenderingMode(.hierarchical)
+                    .frame(width: 44, height: 44)
+                Image(systemName: "app.badge")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+            )
+            .shadow(color: .accentColor.opacity(0.25), radius: 6, x: 0, y: 3)
+            .shadow(color: .accentColor.opacity(0.2), radius: 4, x: 0, y: 2)
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
-        )
-        .shadow(color: .accentColor.opacity(0.25), radius: 6, x: 0, y: 3
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(.white)
-        }
-        .shadow(color: .accentColor.opacity(0.2), radius: 4, x: 0, y: 2)
     }
     
     private var titleSection: some View {
