@@ -522,6 +522,6 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
 		AppLogManager.shared.debug("Scene entered background", category: "Lifecycle")
 		
 		// Save any pending changes
-		Storage.shared.save()
+		Storage.shared.saveContext()
 	}
 }
