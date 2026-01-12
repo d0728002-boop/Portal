@@ -22,7 +22,7 @@ struct TabBarCustomizationView: View {
             } header: {
                 Text(.localized("Visible Tabs"))
             } footer: {
-                Text(.localized("Choose which tabs appear in the tab bar. Settings cannot be hidden and at least 2 tabs must be visible."))
+                Text(.localized("Choose which tabs appear in the bottom tab bar. Settings cannot be hidden and at least 2 tabs must be visible."))
             }
         }
         .onAppear {

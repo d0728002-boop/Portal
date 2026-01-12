@@ -140,7 +140,7 @@ struct AppearanceView: View {
 					ConditionalLabel(title: .localized("Status Bar Customization"), systemImage: "rectangle.inset.topright.filled")
 				}
 			} footer: {
-				Text(.localized("Customize status bar with SF Symbols, text, colors, and more"))
+				Text(.localized("Customize the Status Bar with custom tweaks like text, time animations and SF symbols."))
 			}
 			
 			NBSection(.localized("Tab Bar")) {
@@ -155,7 +155,7 @@ struct AppearanceView: View {
 				NBSection(.localized("Experiments")) {
 					Toggle(.localized("Enable Liquid Glass"), isOn: $_ignoreSolariumLinkedOnCheck)
 				} footer: {
-					Text(.localized("This enables Liquid Glass for this app, this requires a restart of the app to take effect."))
+					Text(.localized("This enables Liquid Glass for Portal, this requires Portal to restart in order for the changes to reflect."))
 				}
 			}
 		}

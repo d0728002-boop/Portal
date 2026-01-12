@@ -232,7 +232,7 @@ extension CertificatesView {
 	
 	@ViewBuilder
 	private func _contextActions(for cert: CertificatePair) -> some View {
-		Button(.localized("Get Info"), systemImage: "info.circle") {
+		Button(.localized("Details"), systemImage: "info.circle") {
 			_isSelectedInfoPresenting = cert
 		}
 		Button(.localized("Export Entitlements"), systemImage: "square.and.arrow.up") {

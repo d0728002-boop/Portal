@@ -1,5 +1,4 @@
-// Developer Mode - Production Grade Internal Control Panel
-// Secure authentication required for access
+// DeveloperView changed, more features and redesigned
 
 import SwiftUI
 import NimbleViews
@@ -6251,7 +6250,7 @@ struct SigningPerformanceMetricsView: View {
             loadMetrics()
             isRefreshing = false
             HapticsManager.shared.success()
-            ToastManager.shared.show("✅ Metrics refreshed", type: .success)
+            ToastManager.shared.show("✅ Metrics Refreshed", type: .success)
         }
     }
     
@@ -6264,7 +6263,7 @@ struct SigningPerformanceMetricsView: View {
         
         metrics = SigningMetrics()
         HapticsManager.shared.success()
-        ToastManager.shared.show("✅ Statistics reset", type: .success)
+        ToastManager.shared.show("✅ Statistics Reset", type: .success)
         AppLogManager.shared.info("Performance metrics reset", category: "Metrics")
     }
 }
@@ -6465,11 +6464,11 @@ struct APIWebhookIntegrationView: View {
             isTestingWebhook = false
             
             if webhookURL.hasPrefix("http") {
-                webhookTestResult = "✅ Success - Webhook delivered"
+                webhookTestResult = "✅ Success - Webhook Delivered"
                 HapticsManager.shared.success()
-                AppLogManager.shared.success("Webhook test successful", category: "Webhook")
+                AppLogManager.shared.success("Webhook Test Successful", category: "Webhook")
             } else {
-                webhookTestResult = "❌ Failed - Invalid webhook URL"
+                webhookTestResult = "❌ Failed - Invalid Webhook URL"
                 HapticsManager.shared.error()
                 AppLogManager.shared.error("Webhook test failed - invalid URL", category: "Webhook")
             }

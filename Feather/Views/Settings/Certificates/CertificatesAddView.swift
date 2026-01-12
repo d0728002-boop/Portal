@@ -39,7 +39,7 @@ struct CertificatesAddView: View {
             .padding(20)
         }
         .background(Color(UIColor.systemGroupedBackground))
-        .navigationTitle("New Certificate")
+        .navigationTitle("Add Certificate")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -236,7 +236,7 @@ struct CertificatesAddView: View {
                     .foregroundStyle(Color.accentColor)
             }
             
-            TextField("Nickname (Optional)", text: $_certificateName)
+            TextField("Certificate Name", text: $_certificateName)
                 .font(.system(size: 15))
         }
         .padding(.horizontal, 14)
@@ -479,8 +479,8 @@ extension CertificatesAddView {
 			FR.checkPasswordForCertificate(for: p12URL, with: _p12Password, using: provisionURL)
 		else {
 			UIAlertController.showAlertWithOk(
-				title: .localized("Bad Password"),
-				message: .localized("Please check the password and try again.")
+				title: .localized("Error"),
+				message: .localized("The password you entered is wrong, please try again to add this certificate")
 			)
 			return
 		}

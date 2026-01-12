@@ -19,7 +19,7 @@ struct ArchiveView: View {
 			}
 			
 			Section {
-				Toggle(.localized("Show Sheet when Exporting"), systemImage: "square.and.arrow.up", isOn: $_useShareSheet)
+				Toggle(.localized("Show Sheet When Exporting"), systemImage: "square.and.arrow.up", isOn: $_useShareSheet)
 			} footer: {
 				Text(.localized("Toggling show sheet will present a share sheet after exporting to your files."))
 			}
