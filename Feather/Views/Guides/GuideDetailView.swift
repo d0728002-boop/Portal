@@ -180,8 +180,7 @@ struct GuideDetailView: View {
             )
             .presentationDetents([.fraction(0.55)])
             .presentationDragIndicator(.hidden)
-            .presentationBackground(.ultraThinMaterial)
-            .presentationCornerRadius(32)
+            .glassmorphicPresentation()
             .interactiveDismissDisabled(false)
         }
         .sheet(isPresented: $showingDescribeGuideInput) {
@@ -201,8 +200,7 @@ struct GuideDetailView: View {
             )
             .presentationDetents([.fraction(0.45)])
             .presentationDragIndicator(.hidden)
-            .presentationBackground(.ultraThinMaterial)
-            .presentationCornerRadius(32)
+            .glassmorphicPresentation()
         }
         .sheet(isPresented: $showingTranslateSheet) {
             GlassmorphicTranslateSheet(
@@ -221,8 +219,7 @@ struct GuideDetailView: View {
             )
             .presentationDetents([.fraction(0.55)])
             .presentationDragIndicator(.hidden)
-            .presentationBackground(.ultraThinMaterial)
-            .presentationCornerRadius(32)
+            .glassmorphicPresentation()
         }
         .sheet(isPresented: Binding(
             get: { aiError != nil },
@@ -239,8 +236,7 @@ struct GuideDetailView: View {
             )
             .presentationDetents([.fraction(0.35)])
             .presentationDragIndicator(.hidden)
-            .presentationBackground(.ultraThinMaterial)
-            .presentationCornerRadius(32)
+            .glassmorphicPresentation()
         }
     }
     
@@ -256,7 +252,7 @@ struct GuideDetailView: View {
         } label: {
             Image(systemName: "sparkles")
                 .foregroundStyle(isAIAvailable ? accentColor : .secondary)
-                .symbolEffect(.pulse, options: .repeating, isActive: isAIAvailable)
+                .aiButtonEffect(isActive: isAIAvailable)
         }
         .disabled(isProcessingAI)
     }
@@ -1991,6 +1987,31 @@ struct GlassmorphicErrorSheet: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
+        }
+    }
+}
+
+// MARK: - View Modifiers for iOS Version Compatibility
+extension View {
+    /// Applies glassmorphic presentation styling with iOS version checks
+    @ViewBuilder
+    func glassmorphicPresentation() -> some View {
+        if #available(iOS 16.4, *) {
+            self
+                .presentationBackground(.ultraThinMaterial)
+                .presentationCornerRadius(32)
+        } else {
+            self
+        }
+    }
+    
+    /// Applies AI button effect with iOS version checks
+    @ViewBuilder
+    func aiButtonEffect(isActive: Bool) -> some View {
+        if #available(iOS 17.0, *) {
+            self.symbolEffect(.pulse, options: .repeating, isActive: isActive)
+        } else {
+            self
         }
     }
 }
